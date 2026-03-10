@@ -1,0 +1,61 @@
+import cv2
+import sys
+
+from .rknn_func_yolo.rknn_pool import RKNNPoolExecutor
+from .rknn_func_yolo.yolo_processor_changing2 import YoloProcessor
+
+from ..model import YoloModel
+
+
+class YoloDetector:
+    def __init__(self, yolo_model):
+        if yolo_model == YoloModel.VEHICLE:
+            # 替换为【YOLOv8n_车辆检测】的RKNN量化模型路径
+            model_path =  "/home/bcsh/Desktop/best.rknn"
+        elif yolo_model == YoloModel.WEAPON:
+            model_path =  "/home/bcsh/Desktop/best.rknn"
+        elif yolo_model == YoloModel.FACE:
+            model_path =  "/home/bcsh/Desktop/best.rknn"
+        elif yolo_model == YoloModel.GESTURE:
+            model_path =  "/home/bcsh/Desktop/best.rknn"
+        else:
+            raise RuntimeError(f"Unknown YoloModel type: {yolo_model}")
+
+        yolo_processor = YoloProcessor(yolo_model)
+        self.worker_number = 4  # 保持线程数不变，可根据性能微调
+        self.pool = RKNNPoolExecutor(
+            rknn_model=model_path, worker_number=self.worker_number, func=yolo_processor.process)
+        self.window_name = "Yolo Detect Image"
+
+
+
+
+    def __del__(self):
+        self.clean_up()
+
+    def get_worker_number(self):
+        return self.worker_number
+
+    def fill_pool(self, frame):
+        frame = cv2.resize(frame, (640, 480))
+        self.pool.put(frame)
+
+    def process_frame(self, frame):
+        self.fill_pool(frame)
+        (frame, detections), flag = self.pool.get()
+        result = frame.copy()
+
+        cv2.imshow(self.window_name, result)
+        cv2.waitKey(1)
+
+        return detections
+
+    def clear_pool(self):
+        frame_queue = self.pool.queue
+        while not frame_queue.empty():
+            frame_queue.get()
+
+    def clean_up(self):
+        # 关闭OpenCV窗口
+        cv2.destroyAllWindows()
+        self.pool.release()
