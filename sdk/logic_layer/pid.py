@@ -1,5 +1,5 @@
 class PIDController:
-    def __init__(self, k_p=15.0, k_i=0.2, k_d=1.0, max_output=100, integral_limit=100):
+    def __init__(self, k_p=200.0, k_i=0.5, k_d=150.0, max_output = 700, integral_limit=600):
         # 比例系数 (建议范围 10-30)
         self.k_p = k_p
         # 积分系数 (建议范围 0.1-0.5)
@@ -14,6 +14,7 @@ class PIDController:
         # 运行参数
         self.prev_error = 0.0
         self.integral = 0.0
+        self.error_change = 0.0  # 初始化误差变化率
 
     def compute(self, offset):
         # 当前误差（输入已经是偏移量）
@@ -33,7 +34,8 @@ class PIDController:
         integration = self.k_i * self.integral
 
         # 微分项（基于误差变化率）
-        differentiation = self.k_d * (error - self.prev_error)
+        error_change = error - self.prev_error
+        differentiation = self.k_d * error_change
         self.prev_error = error
 
         # 计算总输出

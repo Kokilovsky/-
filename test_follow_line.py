@@ -4,11 +4,11 @@ from sdk.logic_layer.pid import PIDController
 
 if __name__ == '__main__':
     # 参数设置
-    move_speed = 16
+    move_speed = 60
 
-    k_p = 16
-    k_i = 0.01
-    k_d = 140
+    k_p = 10
+    k_i = 0.02
+    k_d = 89.5
 
     # 传感器 逻辑处理器 执行器
     api = UpAPI()
@@ -24,10 +24,10 @@ if __name__ == '__main__':
         # pid
         turn_rate = pid.compute(offset)
 
-        # print("=============")
-        # print(f"grayscale_data: {grayscale_data}")
-        # print(f"offset: {offset}")
-        # print(f"turn_rate: {turn_rate}")
+        print("=============")
+        print(f"grayscale_data: {grayscale_data}")
+        print(f"offset: {offset}")
+        print(f"turn_rate: {turn_rate}")
 
         # 发送移动指令
         if offset is not None:

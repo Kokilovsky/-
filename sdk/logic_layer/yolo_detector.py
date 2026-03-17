@@ -2,7 +2,7 @@ import cv2
 import sys
 
 from .rknn_func_yolo.rknn_pool import RKNNPoolExecutor
-from .rknn_func_yolo.yolo_processor_changing2 import YoloProcessor
+from .rknn_func_yolo.yolo_processor import YoloProcessor
 
 from ..model import YoloModel
 

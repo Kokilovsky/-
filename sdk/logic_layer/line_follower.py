@@ -1,5 +1,5 @@
 class SingleLineFollower:
-    def __init__(self, mid_index=3, data_length=7):
+    def __init__(self, mid_index=3,data_length=7):
         self.mid_index = mid_index
         self.data_length = data_length
 
@@ -26,10 +26,11 @@ class SingleLineFollower:
         # 检查最后一个段
         if len(current_segment) > len(longest_segment):
             longest_segment = current_segment
-
         if longest_segment:
-            avg_indices = self.mid_index - (sum(longest_segment) / len(longest_segment))
+            avg_indices = 3*(self.mid_index - (sum(longest_segment) / len(longest_segment)))
+            longest_segment_length = len(longest_segment)
         else:
             avg_indices = 0
+            longest_segment_length = 0
 
-        return avg_indices
+        return avg_indices,longest_segment_length
