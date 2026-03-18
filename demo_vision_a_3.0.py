@@ -1,4 +1,4 @@
-# 机器人视觉竞技 A 
+# 机器人视觉竞技 A
 
 from sdk.data_layer.arm import arm_action_factory as arm_action
 from sdk.api import UpAPI
