@@ -63,7 +63,7 @@ class Controller:
         self.time_move2gesture = 1570
         self.time_move2yolo = 1000
         self.time_move2face = 1020
-        self.time_move2home = 2260
+        self.time_move2home = 2000
 
         # -------- 识别/目标参数 --------
         self.target_yolo = "tank"
@@ -389,29 +389,19 @@ class Controller:
                         self.stage += 1
                     else:
                         speed = self.__phase_speed("home_move", self.speed_move_main, self.time_move2home)
-                        self.api.move_backward(speed=speed)
+                        self.api.turn_right()
+                        self.api.move_forward(speed=speed)
 
-                        if self.locator.leave_cross(grayscale_data) and self.cross_state:
-                            self.count_cross_pass += 1
-                            self.cross_state = 0
-                            print("越过一个十字")
+                        if self.locator.leave_cross(grayscale_data):
+                            print("出发")
                         elif self.locator.detect_black(grayscale_data):
-                            if self.count_cross_pass < 2:
-                                self.cross_state = 1
-                            elif self.count_cross_pass == 2:
-                                judge, direction, size = self.locator.correct_end(grayscale_data)
-                                if judge:
-                                    print(f"尾段校正: {direction}, size: {size}")
-                                    if direction == 'left':
-                                        self.locator_end_correct = 1
-                                    elif direction == 'right':
-                                        self.locator_end_correct = 2
-                                    self.locator_end_size = size
+                            self.api.stop()
                                 
                 elif self.stage == 1:
                     self.stage = 0
                     self.state_main = MainState.FINISH
-
+                    self.follow_line = FollowLine()
+                    self.follow_line.follow_line()
 
             elif self.state_main == MainState.FINISH:
                 if self.locator_end_correct:
