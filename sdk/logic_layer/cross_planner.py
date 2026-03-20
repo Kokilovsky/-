@@ -41,6 +41,20 @@ class CrossLocator:
                 return center
         return False
 
+    # 0到6黑
+    def reach_target_accurate(self,data):
+        if len(data) == 7:
+            return (data[0] == self.target_data[0]
+                    and data[1] == self.target_data[1]
+                    and data[2] == self.target_data[2]
+                    and data[3] == self.target_data[3]
+                    and data[4] == self.target_data[4]
+                    and data[5] == self.target_data[5]
+                    and data[6] == self.target_data[6]
+                    )
+        return False
+    # 全白
+    
     def move_straight(self, data):
         if len(data) == 7:
             return (data[0] != self.target_data[0]
@@ -122,3 +136,54 @@ class CrossLocator:
         if len(data) == 7:
             pass
         return False
+
+    def seeking_error(self,data):
+        if len(data) == 7:
+            grayscale0 = data[0] == self.target_data[0]
+            grayscale1 = data[1] == self.target_data[1]
+            grayscale2 = data[2] == self.target_data[2]
+            grayscale4 = data[4] == self.target_data[4]
+            grayscale5 = data[5] == self.target_data[5]
+            grayscale6 = data[6] == self.target_data[6]
+            return (grayscale0 and grayscale1 and grayscale2) or (grayscale4 and grayscale5 and grayscale6)
+        return False
+
+    #  最后一个十字偏左
+    def correct_end_left(self, data):
+        if len(data) == 7:
+            grayscale3 = data[3] == self.target_data[3]
+            grayscale5 = data[5] == self.target_data[5]
+            grayscale6 = data[6] == self.target_data[6]
+            return (not grayscale3) and (grayscale5 or grayscale6)
+        return False
+    
+    #  最后一个十字偏右
+    def correct_end_right(self, data):
+        if len(data) == 7:
+            grayscale0 = data[0] == self.target_data[0]
+            grayscale1 = data[1] == self.target_data[1]
+            grayscale3 = data[3] == self.target_data[3]
+            return (not grayscale3) and (grayscale0 or grayscale1)
+        return False
+            
+    # 最后一个十字偏左或偏右
+    def correct_end(self, data):
+        if len(data) == 7:
+            grayscale0 = data[0] == self.target_data[0]
+            grayscale1 = data[1] == self.target_data[1]
+            grayscale2 = data[2] == self.target_data[2]
+            grayscale3 = data[3] == self.target_data[3]
+            grayscale4 = data[4] == self.target_data[4]
+            grayscale5 = data[5] == self.target_data[5]
+            grayscale6 = data[6] == self.target_data[6]
+            if (not grayscale3) and grayscale1:
+                return True, 'right', 1
+            elif ((not grayscale3) and (not grayscale1) and grayscale0) or ((not grayscale3) and grayscale0 and grayscale1 and grayscale2):
+                return True, 'right', 2
+            elif (not grayscale3) and grayscale5:
+                return True, 'left', 1
+            elif (not grayscale3) and (not grayscale5) and grayscale6 or ((not grayscale3) and grayscale4 and grayscale5 and grayscale6):
+                return True, 'left', 2
+            else:
+                return False, None, None
+        return False, None, None

@@ -4,6 +4,7 @@ from .application_layer.processor import Processor
 from .data_layer.arm import arm_action_factory as data_arm
 from .model import YoloModel
 import cv2
+import time
 
 
 class UpAPI:
@@ -241,6 +242,7 @@ class UpAPI:
         ret, frame = self.__sensor.get_camera().read()
         if ret:
             return frame
+        time.sleep(0.03)
         raise RuntimeError("Failed to read camera frame")
 
     # ------------------------------ 视觉处理数据 ------------------------------
@@ -324,18 +326,195 @@ class UpAPI:
     def detect_gesture(self):
         """
         手势识别
-
-        :return: 是否找到手势，手势摆出的数字
-        """
+        
         frame = self.get_camera_frame()
-
+     
         gesture_detector = self.__processor.get_gesture_detector()
         number = gesture_detector.process(frame)
 
         if number:
             return True, number
         return False, None
+        """
+        A = int(time.time() * 1000)
+        frame = self.get_camera_frame()
+        print(f"frame_time = {int(time.time() * 1000)-A}")
 
+        yolo_detector = self.__processor.get_yolo_detector()
+        detections = yolo_detector.process_frame(frame)  # 这一句有问题
+    
+        # 初始化变量为 None
+        k = None
+    
+        # 遍历所有检测结果
+        for name, score, center, offset_x,width, height in detections:
+            print(f"score={score},name={name}")
+            if score > 0.85:
+                if name == "quantou":
+                    k = 3  # 举左手
+                elif name == "bu":
+                    k = 5  # 举右手
+    
+        # 只有在找到至少一个目标时才返回 True
+        if k is not None :
+            return True, k
+        else:
+            return False, None
+
+    # 这一段是我的思路
+    def detect_yolo(self):
+        frame = self.get_camera_frame()
+    
+        yolo_detector = self.__processor.get_yolo_detector()
+        detections = yolo_detector.process_frame(frame)
+    
+        # 初始化变量为 None
+        m = None
+        n = None
+    
+        # 遍历所有检测结果
+        for name, score, center, offset_x,width, height in detections:
+            if name == "tank":
+                m = offset_x  # 记录坦克偏移量
+            elif name == "ambulance":
+                n = offset_x  # 记录救护车偏移量
+    
+        # 只有在找到至少一个目标时才返回 True
+        if m is not None and n is not None:
+            return True, m, n
+        else:
+            return False, None, None
+        
+    #  在手势十字提前看yolo的方案
+    def pre_detect_yolo(self):
+        frame = self.get_camera_frame()
+    
+        yolo_detector = self.__processor.get_yolo_detector()
+        detections = yolo_detector.process_frame(frame)
+    
+        # 初始化变量为 None
+        m = None
+        n = None
+    
+        # 遍历所有检测结果
+        for name, score, center, offset_x,width, height in detections:
+            if name == "tank":
+                m = offset_x  # 记录坦克偏移量
+            elif name == "ambulance":
+                n = offset_x  # 记录救护车偏移量
+        if n == None or m == None:
+            if n != None:
+                return False, "只读到ambulance"
+            elif m != None:
+                return False, "只读到tank"
+            else:
+                return False, "一个没读到"
+        else:
+            if n > 280 and m < 280:
+                return True, "tank"
+            elif m > 280 and n < 280:
+                return True, "ambulance"
+            elif m > 280 and n > 280:
+                print("两个对象都在识别区外")
+                if m < n:
+                    return True, "tank"
+                else:
+                    return True, "ambulance"
+            elif m < 280 and n < 280:
+                print("两个对象都在识别区内")
+                if m < n:
+                    return True, "tank"
+                else:
+                    return True, "ambulance"
+
+    #  边斜着走边识别yolo
+    def sustain_detect_yolo(self,out):
+        frame = self.get_camera_frame()
+        # 输出录像
+        #out.write(frame)
+    
+        yolo_detector = self.__processor.get_yolo_detector()
+        detections = yolo_detector.process_frame(frame)
+    
+        # 初始化变量为 None
+        m = None
+        n = None
+        w = None
+    
+        # 遍历所有检测结果
+        for name, score, center, offset_x,width, height in detections:
+            if name == "tank":
+                m = offset_x  # 记录坦克偏移量
+                w = width
+            elif name == "ambulance":
+                n = offset_x  # 记录救护车偏移量
+    
+        # 只有在找到至少一个目标时才返回 True
+        if m != None and w != None:
+            return True, m, n, w
+        else:
+            return False, None, None,None 
+
+    def sustain_detect_face(self,out):
+        frame = self.get_camera_frame()
+
+        # 输出录像
+        #out.write(frame)
+    
+        yolo_detector = self.__processor.get_yolo_detector()
+        detections = yolo_detector.process_frame(frame)
+    
+        # 初始化变量为 None
+        m = None
+        n = None
+        w = None
+    
+        # 遍历所有检测结果
+        for name, score, center, offset_x,width, height in detections:
+            if name == "t_0":
+                m = offset_x  # 记录坏人偏移量
+                w = width
+            elif name == "h_0":
+                n = offset_x  # 记录好人偏移量
+    
+        # 只有在找到坏人时才返回 True
+        if m != None and w != None:
+            return True, m, n, w
+        else:
+            return False, None, None, None 
+
+    #  最开始yolo识别人脸
+    def pre_detect_face(self):
+        frame = self.get_camera_frame()
+    
+        yolo_detector = self.__processor.get_yolo_detector()
+        detections = yolo_detector.process_frame(frame)
+    
+        # 初始化变量为 None
+        m = None
+        n = None
+    
+        # 遍历所有检测结果
+        for name, score, center, offset_x,width, height in detections:
+            if name == "t_0":
+                m = offset_x  # 记录坏人偏移量
+            elif name == "h_0":
+                n = offset_x  # 记录好人偏移量
+
+        print(f"m={m},n={n}")
+        if m == None or n == None:
+            return False, "两个人脸中至少一个未识别"
+        elif m < n:
+            if n - m < 10:
+                return False, "二者太接近，重新识别"
+            else:
+                return True, "坏人在左边"
+        else:
+            if m - n < 10:
+                return False, "二者太接近，重新识别"
+            else:
+                return True, "坏人在右边"
+            
     def preload_yolo_pool(self):
         """
         Yolo 预加载
@@ -396,3 +575,136 @@ class UpAPI:
 
         if self.__window_exists(gesture_window):
             cv2.destroyWindow(gesture_window)
+
+    def detect_yolo1(self):
+        frame = self.get_camera_frame()
+    
+        yolo_detector = self.__processor.get_yolo_detector()
+        detections = yolo_detector.process_frame(frame)
+    
+        # 初始化变量为 None
+        m = None
+        n = None
+        k = None  
+    
+        # 遍历所有检测结果
+        for name, score, center, offset_x, width, height in detections:
+            if name == "tank":
+                m = offset_x
+                k=width  # 记录坦克偏移量
+            elif name == "ambulance":
+                n = offset_x  # 记录救护车偏移量
+    
+        # 只有在找到至少一个目标时才返回 True
+        if m is not None and n is not None:
+            return True, m, n, k 
+        else:
+            return False, None, None, None
+
+    def recording_prepare(self):
+        cap = self.__sensor.get_camera()
+        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = int(cap.get(cv2.CAP_PROP_FPS))
+
+        # 如果无法获取帧率，设置默认值
+        if fps <= 0:
+            fps = 30  # 常见摄像头的默认帧率
+
+        # 定义视频编码器（FourCC）
+        # 常用编码器：'XVID'（通用）、'MJPG'、'H264'、'MP4V'
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')  # 也可以使用 'mp4v' 保存为 MP4 格式
+
+        # 创建 VideoWriter 对象
+        # 参数：输出文件名、编码器、帧率、帧大小
+        out = cv2.VideoWriter('output.avi', fourcc, fps, (frame_width, frame_height))
+
+        return out
+
+    def reset_recording(self):
+        self.__sensor.get_camera().release()
+        self.recording_prepare().release()
+
+    # 关闭
+    def clean_up(self):
+        self.__processor.clean_up()
+
+    # 以下函数为多线程方案专属    simple.py --------------------------------------------------------------------------------------------------------------
+    def simple_get_camera(self):
+        cap = self.__sensor.get_camera()
+        return cap
+
+    def simple_detect_gesture(self, frame):
+        yolo_detector = self.__processor.get_yolo_detector()
+        detections = yolo_detector.process_frame(frame)  # 这一句有问题
+        # 初始化变量为 None
+        k = None
+        print("进入遍历")
+        # 遍历所有检测结果
+        for name, score, center, offset_x,width, height in detections:
+            print(f"score={score},name={name}")
+            if score > 0.85:
+                if name == "quantou":
+                    k = 3  # 举左手
+                elif name == "bu":
+                    k = 5  # 举右手
+        print(f"k={k}")
+    
+        # 只有在找到至少一个目标时才返回 True
+        if k is not None :
+            return True, k
+        else:
+            return False, None
+
+    def simple_detect_yolo(self, frame):
+        yolo_detector = self.__processor.get_yolo_detector()
+        detections = yolo_detector.process_frame(frame)
+    
+        # 初始化变量为 None
+        m = None
+        n = None
+        w = None
+    
+        # 遍历所有检测结果
+        for name, score, center, offset_x,width, height in detections:
+            if name == "tank":
+                m = offset_x  # 记录坦克偏移量
+                w = width
+            elif name == "ambulance":
+                n = offset_x  # 记录救护车偏移量
+    
+        # 只有在找到至少一个目标时才返回 True
+        if m != None and w != None:
+            return True, m, n, w
+        else:
+            return False, None, None,None 
+
+    def simple_detect_face(self, frame):
+        yolo_detector = self.__processor.get_yolo_detector()
+        detections = yolo_detector.process_frame(frame)
+    
+        # 初始化变量为 None
+        m = None
+        n = None
+        w = None
+    
+        # 遍历所有检测结果
+        for name, score, center, offset_x,width, height in detections:
+            if name == "t_0":
+                m = offset_x  # 记录坏人偏移量
+                w = width
+            elif name == "h_0":
+                n = offset_x  # 记录好人偏移量
+    
+        # 只有在找到坏人时才返回 True
+        if m != None and w != None:
+            return True, m, n, w
+        else:
+            return False, None, None, None 
+
+    #  测试摄像头，跑掉第一次超长time
+    def camera_test(self, frame):
+        print("打开摄像头画面")
+        yolo_detector = self.__processor.get_yolo_detector()
+        detections = yolo_detector.process_frame(frame)
+        return True

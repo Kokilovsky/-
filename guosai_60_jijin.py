@@ -66,7 +66,7 @@ class Controller:
 
         # -------- 识别/目标参数 --------
         self.target_yolo = "tank"
-        self.target_face = "t_0"
+        self.target_face = "bad_person"
         self.target_id = 1
         self.target_number_right = 3
         self.target_number_both = 5
