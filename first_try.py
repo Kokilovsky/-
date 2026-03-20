@@ -61,9 +61,9 @@ class Controller:
         self.time_pre_face = 400
         self.time_move2april = 1100
         self.time_move2gesture = 1570                    
-        self.time_move2yolo = 1570
+        self.time_move2yolo = 2150        ##重要，或需不断修改
         self.time_move2face = 1020
-        self.time_move2home = 1100        ##待确定
+        self.time_move2home = 950        ##待确定
 
         # -------- 识别/目标参数 --------
         self.target_yolo = "tank"
@@ -295,17 +295,27 @@ class Controller:
                         self.api.stop()
                         self.stage = 1
                     else:
-
-                        speed = self.__phase_speed("yolo_move_1", self.speed_move_main, self.time_move2yolo/2)
-                        self.api.move_forward(speed)
-                        speed = self.__phase_speed("yolo_move_2", self.speed_move_main, self.time_move2yolo/2)
-                        self.api.move_translation(angle = 270,speed = speed)
+                        # 计算当前已经经过的时间
+                        elapsed_time = self.__get_nowtime() - self._phase_start_times['yolo_move']
+                        half_time = self.time_move2yolo / 2
+                        
+                        # 判断当前处于前半段还是后半段
+                        if elapsed_time < half_time-380:
+                            # 前半段时间：前进
+                            # 注意更换 key 比如 "yolo_move_forward"
+                            speed = self.__phase_speed("yolo_move_forward", self.speed_move_main, half_time)
+                            self.api.move_forward(speed)
+                        else:
+                            # 后半段时间：侧移
+                            # 使用新的 key 比如 "yolo_move_translation"，让它的加速曲线重新计算
+                            speed = self.__phase_speed("yolo_move_translation", self.speed_move_main, half_time)
+                            self.api.move_translation(angle=270, speed=speed)
 
                 elif self.stage == 1:                                   ##此段击打有逻辑上不太通的地方，我都斗胆做了修改
                     if self.yolo_location == 0:
-                        if (self.__get_nowtime() - self.start_time_yolo) > 1200:
+                        if (self.__get_nowtime() - self.start_time_yolo) > 2100:
                             print("YOLO未识别到，放弃击打")
-                            self.stage = 3  # 跳到转身
+                            self.stage = 2  # 跳到转身
                         else:
                             time.sleep(0.03)
                             continue
@@ -317,6 +327,7 @@ class Controller:
                         self.__hit()
                         time.sleep(self.time_hit/1000)
                         self.__do_arm_action(3)
+                        self.api.move_translation(angle=angle+180,speed=self.speed_hit_position,run_time=self.time_pre_yolo)
                     elif self.yolo_location == 1:
                         angle = 50
                         self.__pre_hit()                     ##因为机器人右手持武器，两边非对称
@@ -324,7 +335,7 @@ class Controller:
                         time.sleep(self.time_pre_yolo/1000)
                         self.__hit()
                         time.sleep(self.time_hit/1000)
-                    self.api.move_translation(angle=angle+180,speed=self.speed_hit_position,run_time=self.time_pre_yolo)
+                        self.api.move_translation(angle=angle+180,speed=self.speed_hit_position,run_time=self.time_pre_yolo)
                     self.__clamp_arms()
                     print("击打tank完成")
                     self.stage = 2
@@ -374,6 +385,7 @@ class Controller:
                         time.sleep(self.time_pre_yolo/1000)
                         self.__hit()
                         time.sleep(self.time_hit/1000)
+                        self.__crossroad_location(2)
                     elif self.face_location == 1:
                         angle = 55
                         self.__pre_hit()
@@ -381,6 +393,7 @@ class Controller:
                         time.sleep(self.time_pre_yolo/1000)
                         self.__hit()
                         time.sleep(self.time_hit/1000)
+                        self.__crossroad_location(2)
 
                     self.api.move_translation(angle=180+angle,speed=self.speed_hit_position,run_time=self.time_pre_yolo)
                     time.sleep(self.time_pre_yolo/1000)
@@ -388,11 +401,18 @@ class Controller:
                     print("击打人脸完成")
                     self.stage = 2
                 elif self.stage == 2:
-                    self.stage = 0
-                    self.api.stop()
-                    self.__crossroad_location(2)
-                    self.api.stop()
-                    self.state_main = MainState.HOME
+                    # 复用写好的右转计时器（如果你担心复用有问题，可以在 __init__ 里新建一个）
+                    if not self.spanner_right_turn.in_progress:
+                        self.spanner_right_turn.start()
+                    
+                    if self.spanner_right_turn.complete():
+                        print("人脸段右转完成，踏上归途")
+                        self.api.stop()
+                        self.stage = 0
+                        self.state_main = MainState.HOME
+                    else:
+                        # 使用你定义的旋转速度
+                        self.api.spin_right(self.speed_spin)
 
             elif self.state_main == MainState.HOME:
                 if self.stage == 0:
@@ -401,12 +421,11 @@ class Controller:
                         self._phase_start_times['home_move'] = self.__get_nowtime()
 
                     if self.spanner_move2home.complete():
-                        print("已到达终点区域")
+                        print("踏上归途")
                         self.api.stop()
                         self.stage += 1
                     else:
                         speed = self.__phase_speed("home_move", self.speed_move_main, self.time_move2home)
-                        self.api.turn_right()
                         self.api.move_forward(speed=speed)
 
                         if self.locator.leave_cross(grayscale_data):
