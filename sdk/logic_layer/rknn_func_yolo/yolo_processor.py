@@ -6,7 +6,7 @@ from ...model import YoloModel
 class YoloProcessor:
     def __init__(self, yolo_model):
         if yolo_model == YoloModel.VEHICLE:
-            classes = ("civilian_vehicle", "field_ambulance", "infantry_fighting_vehicle", "tank")
+            classes = ("civilian_vehicle", "ambulance", "infantry_fighting_vehicle", "tank")
         elif yolo_model == YoloModel.WEAPON:
             classes = ("hammer", "sword", "knife")
         elif yolo_model == YoloModel.FACE:

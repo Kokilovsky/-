@@ -282,7 +282,7 @@ class UpAPI:
 
         return False, -1, 0
 
-    def detect_face(self, label="t_0", sim_threshold=0.4):
+    def detect_face(self, label="bad_person", sim_threshold=0.4):
         """
         DeepFace 人脸检测
 
@@ -304,25 +304,7 @@ class UpAPI:
                 return True, offset_x
 
         return False, None
-
-    def detect_yolo(self, label="tank"):
-        """
-        Yolo 检测
-
-        :param label: 目标标签
-        :return: 是否找到目标，目标相对于屏幕中心水平偏移量
-        """
-        frame = self.get_camera_frame()
-
-        yolo_detector = self.__processor.get_yolo_detector()
-        detections = yolo_detector.process_frame(frame)
-
-        for name, score, center, offset_x in detections:
-            if name == label:
-                return True, offset_x
-
-        return False, None
-
+    
     def detect_gesture(self):
         """
         手势识别
@@ -347,13 +329,13 @@ class UpAPI:
         k = None
     
         # 遍历所有检测结果
-        for name, score, center, offset_x,width, height in detections:
+        for name, score, center, offset_x in detections:
             print(f"score={score},name={name}")
             if score > 0.85:
-                if name == "quantou":
+                if name == "gesture_zero":
                     k = 3  # 举左手
-                elif name == "bu":
-                    k = 5  # 举右手
+                elif name == "gesture_five":
+                    k = 5  # 举双手
     
         # 只有在找到至少一个目标时才返回 True
         if k is not None :
@@ -373,10 +355,10 @@ class UpAPI:
         n = None
     
         # 遍历所有检测结果
-        for name, score, center, offset_x,width, height in detections:
+        for name, score, center, offset_x in detections:
             if name == "tank":
                 m = offset_x  # 记录坦克偏移量
-            elif name == "ambulance":
+            elif name == "civilian_car":
                 n = offset_x  # 记录救护车偏移量
     
         # 只有在找到至少一个目标时才返回 True
@@ -397,14 +379,14 @@ class UpAPI:
         n = None
     
         # 遍历所有检测结果
-        for name, score, center, offset_x,width, height in detections:
+        for name, score, center, offset_x in detections:
             if name == "tank":
                 m = offset_x  # 记录坦克偏移量
-            elif name == "ambulance":
+            elif name == "civilian_car":
                 n = offset_x  # 记录救护车偏移量
         if n == None or m == None:
             if n != None:
-                return False, "只读到ambulance"
+                return False, "只读到civilian_car"
             elif m != None:
                 return False, "只读到tank"
             else:
@@ -413,19 +395,19 @@ class UpAPI:
             if n > 280 and m < 280:
                 return True, "tank"
             elif m > 280 and n < 280:
-                return True, "ambulance"
+                return True, "civilian_car"
             elif m > 280 and n > 280:
                 print("两个对象都在识别区外")
                 if m < n:
                     return True, "tank"
                 else:
-                    return True, "ambulance"
+                    return True, "civilian_car"
             elif m < 280 and n < 280:
                 print("两个对象都在识别区内")
                 if m < n:
                     return True, "tank"
                 else:
-                    return True, "ambulance"
+                    return True, "civilian_car"
 
     #  边斜着走边识别yolo
     def sustain_detect_yolo(self,out):
@@ -439,21 +421,19 @@ class UpAPI:
         # 初始化变量为 None
         m = None
         n = None
-        w = None
     
         # 遍历所有检测结果
-        for name, score, center, offset_x,width, height in detections:
+        for name, score, center, offset_x in detections:
             if name == "tank":
                 m = offset_x  # 记录坦克偏移量
-                w = width
-            elif name == "ambulance":
+            elif name == "civilian_car":
                 n = offset_x  # 记录救护车偏移量
     
         # 只有在找到至少一个目标时才返回 True
-        if m != None and w != None:
-            return True, m, n, w
+        if m != None and n != None:
+            return True, m, n
         else:
-            return False, None, None,None 
+            return False, None, None
 
     def sustain_detect_face(self,out):
         frame = self.get_camera_frame()
@@ -467,21 +447,19 @@ class UpAPI:
         # 初始化变量为 None
         m = None
         n = None
-        w = None
     
         # 遍历所有检测结果
-        for name, score, center, offset_x,width, height in detections:
-            if name == "t_0":
+        for name, score, center, offset_x in detections:
+            if name == "bad_person":
                 m = offset_x  # 记录坏人偏移量
-                w = width
-            elif name == "h_0":
+            elif name == "good_person":
                 n = offset_x  # 记录好人偏移量
     
         # 只有在找到坏人时才返回 True
-        if m != None and w != None:
-            return True, m, n, w
+        if m != None and n != None:
+            return True, m, n
         else:
-            return False, None, None, None 
+            return False, None, None
 
     #  最开始yolo识别人脸
     def pre_detect_face(self):
@@ -495,10 +473,10 @@ class UpAPI:
         n = None
     
         # 遍历所有检测结果
-        for name, score, center, offset_x,width, height in detections:
-            if name == "t_0":
+        for name, score, center, offset_x in detections:
+            if name == "bad_person":
                 m = offset_x  # 记录坏人偏移量
-            elif name == "h_0":
+            elif name == "good_person":
                 n = offset_x  # 记录好人偏移量
 
         print(f"m={m},n={n}")
@@ -585,21 +563,19 @@ class UpAPI:
         # 初始化变量为 None
         m = None
         n = None
-        k = None  
     
         # 遍历所有检测结果
-        for name, score, center, offset_x, width, height in detections:
+        for name, score, center, offset_x in detections:
             if name == "tank":
                 m = offset_x
-                k=width  # 记录坦克偏移量
-            elif name == "ambulance":
-                n = offset_x  # 记录救护车偏移量
+            elif name == "civilian_car":
+                n = offset_x  # 记录民用汽车偏移量
     
         # 只有在找到至少一个目标时才返回 True
         if m is not None and n is not None:
-            return True, m, n, k 
+            return True, m, n
         else:
-            return False, None, None, None
+            return False, None, None
 
     def recording_prepare(self):
         cap = self.__sensor.get_camera()
@@ -641,12 +617,12 @@ class UpAPI:
         k = None
         print("进入遍历")
         # 遍历所有检测结果
-        for name, score, center, offset_x,width, height in detections:
+        for name, score, center, offset_x in detections:
             print(f"score={score},name={name}")
             if score > 0.85:
-                if name == "quantou":
+                if name == "gesture_zero":
                     k = 3  # 举左手
-                elif name == "bu":
+                elif name == "gesture_five":
                     k = 5  # 举右手
         print(f"k={k}")
     
@@ -663,21 +639,19 @@ class UpAPI:
         # 初始化变量为 None
         m = None
         n = None
-        w = None
     
         # 遍历所有检测结果
-        for name, score, center, offset_x,width, height in detections:
+        for name, score, center, offset_x in detections:
             if name == "tank":
                 m = offset_x  # 记录坦克偏移量
-                w = width
-            elif name == "ambulance":
-                n = offset_x  # 记录救护车偏移量
+            elif name == "civilian_car":
+                n = offset_x  # 记录民用汽车偏移量
     
         # 只有在找到至少一个目标时才返回 True
-        if m != None and w != None:
-            return True, m, n, w
+        if m != None and n != None:
+            return True, m, n
         else:
-            return False, None, None,None 
+            return False, None, None
 
     def simple_detect_face(self, frame):
         yolo_detector = self.__processor.get_yolo_detector()
@@ -686,21 +660,19 @@ class UpAPI:
         # 初始化变量为 None
         m = None
         n = None
-        w = None
     
         # 遍历所有检测结果
-        for name, score, center, offset_x,width, height in detections:
-            if name == "t_0":
+        for name, score, center, offset_x in detections:
+            if name == "bad_person":
                 m = offset_x  # 记录坏人偏移量
-                w = width
-            elif name == "h_0":
+            elif name == "good_person":
                 n = offset_x  # 记录好人偏移量
     
         # 只有在找到坏人时才返回 True
-        if m != None and w != None:
-            return True, m, n, w
+        if m != None and n != None:
+            return True, m, n
         else:
-            return False, None, None, None 
+            return False, None, None
 
     #  测试摄像头，跑掉第一次超长time
     def camera_test(self, frame):

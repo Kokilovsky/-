@@ -10,13 +10,13 @@ from ..model import YoloModel
 class YoloDetector:
     def __init__(self, yolo_model):
         if yolo_model == YoloModel.VEHICLE:
-            model_path = "/home/bcsh/Desktop/best.rknn"
+            model_path = "/home/bcsh/daima2/upele_vision_class_code/app/sdk/data_layer/yolo/rknnModel/vehicle_quantized_mmse.rknn"
         elif yolo_model == YoloModel.WEAPON:
-            model_path =  "/home/bcsh/Desktop/best.rknn"
+            model_path =  "/home/bcsh/daima2/upele_vision_class_code/app/sdk/data_layer/yolo/rknnModel/vehicle_quantized_mmse.rknn"
         elif yolo_model == YoloModel.FACE:
-            model_path =  "/home/bcsh/Desktop/best.rknn"
+            model_path =  "/home/bcsh/daima2/upele_vision_class_code/app/sdk/data_layer/yolo/rknnModel/vehicle_quantized_mmse.rknn"
         elif yolo_model == YoloModel.GESTURE:
-            model_path =  "/home/bcsh/Desktop/best.rknn"
+            model_path =  "/home/bcsh/daima2/upele_vision_class_code/app/sdk/data_layer/yolo/rknnModel/vehicle_quantized_mmse.rknn"
         else:
             raise RuntimeError(f"Unknown YoloModel type: {yolo_model}")
 

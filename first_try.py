@@ -682,7 +682,7 @@ class Controller:
 
                 # YOLO阶段移动中
                 elif self.state_main == MainState.YOLO and self.stage == 0 and self.yolo_location == 0:
-                    find_target, offset, offset_y, width = self.api.sustain_detect_yolo(self.recording_out)
+                    find_target, offset, offset_y = self.api.sustain_detect_yolo(self.recording_out)
                     if find_target and offset is not None and offset_y is not None:
                         if offset < offset_y:
                             self.yolo_location_judge[0] += 1
@@ -696,7 +696,7 @@ class Controller:
 
                 # 人脸阶段移动中
                 elif self.state_main == MainState.FACE and self.stage == 0 and self.face_location == 0:
-                    find_target, offset, offset_y, width = self.api.sustain_detect_face(self.recording_out)
+                    find_target, offset, offset_y = self.api.sustain_detect_face(self.recording_out)
                     if find_target and offset is not None and offset_y is not None:
                         if offset < offset_y:
                             self.face_location_judge[0] += 1
@@ -706,7 +706,7 @@ class Controller:
                             self.face_location_judge[1] += 1
                             if self.face_location_judge[1] > self.face_location_max:
                                 self.face_location = 2
-                        print(f"已识别成t_0靠左{self.face_location_judge[0]}次，已识别成t_0靠右{self.face_location_judge[1]}次")
+                        print(f"已识别成坏人靠左{self.face_location_judge[0]}次，已识别成坏人靠右{self.face_location_judge[1]}次")
                 else:
                     time.sleep(0.01)
             except Exception:
